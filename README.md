@@ -118,7 +118,7 @@ SELECT balance FROM accounts WHERE id = 1;
 ### solution (Lost Update)
 
 1. SELECT balance FROM accounts WHERE id = 1 FOR UPDATE;
-2. SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+2. SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 
 
 
@@ -206,7 +206,7 @@ COMMIT;
 ```
 
 
-## solution (dirty read)
+## solution (non-repeatable read)
 
 
 
@@ -235,3 +235,44 @@ SELECT balance FROM accounts WHERE id = 1;
 COMMIT;
 ```
 
+## PHANTOM READ
+
+### Step 1 sesshion1
+
+```sql
+SET SESSION autocommit = 0;
+SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+SELECT @@global.transaction_isolation, @@session.transaction_isolation;
+START TRANSACTION;
+SELECT COUNT(*) FROM accounts;
+-- Очікуваний результат: 2
+```
+
+### Step 2 sesshion2
+
+```sql
+SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SET autocommit = 0;
+START TRANSACTION;
+
+INSERT INTO accounts (name, balance) VALUES ('Charlie', 2000);
+COMMIT;
+```
+
+### Step 3 sesshion1
+
+```sql 
+
+SELECT COUNT(*) FROM accounts;
+# COUNT(*)
+#'2'
+
+
+COMMIT;
+```
+
+## solution (phantom read)
+
+1. SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;
