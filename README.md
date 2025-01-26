@@ -34,7 +34,7 @@ SELECT * FROM accounts;
 
 ```
 
-## Lost Update 
+## LOST UPDATE 
 
 ### Step 1 sesshion1 
 
@@ -121,7 +121,9 @@ SELECT balance FROM accounts WHERE id = 1;
 2. SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 
 
-## dirty read 
+
+
+## DIRTY READ
 
 ### Step 1 sesshion1
 ```sql
@@ -154,11 +156,12 @@ ROLLBACK;
 
 ### solution (dirty read)
 
-SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+```sql
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
 START TRANSACTION;
 SELECT balance FROM accounts WHERE id = 1;
 # balance
-#'2000'
--- Output: 2000 (некоректне значення)
-
+#'1000'
 COMMIT;
+```
+
