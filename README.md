@@ -164,4 +164,74 @@ SELECT balance FROM accounts WHERE id = 1;
 #'1000'
 COMMIT;
 ```
+## NON-REPEATABLE READ
+
+### Step 1 sesshion1
+```sql
+SET autocommit = 0;
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SET GLOBAL TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SELECT @@global.transaction_isolation, @@session.transaction_isolation;
+-- 15:28:17	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ	0 row(s) affected	0.000 sec
+
+START TRANSACTION;
+-- 15:28:17	START TRANSACTION	0 row(s) affected	0.000 sec
+SELECT balance FROM accounts WHERE id = 1;
+-- 15:28:17	SELECT balance FROM accounts WHERE id = 1 LIMIT 0, 100000	1 row(s) returned	0.000 sec / 0.000 sec
+-- Output: 1000
+```
+### Step 2 sesshion2
+
+```sql
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SET GLOBAL TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SELECT @@global.transaction_isolation, @@session.transaction_isolation;
+
+UPDATE accounts SET balance = balance + 500 WHERE id = 1;
+-- 15:29:19	UPDATE accounts SET balance = balance + 500 WHERE id = 1	1 row(s) affected Rows matched: 1  Changed: 1  Warnings: 0	0.000 sec
+COMMIT;
+```
+
+
+### Step 3 sesshion1
+
+```sql
+START TRANSACTION  WITH CONSISTENT SNAPSHOT;
+SELECT balance FROM accounts WHERE id = 1;
+# balance
+# '1500'
+
+-- Output: 1500 (неповторюване читання)
+COMMIT;
+```
+
+
+## solution (dirty read)
+
+
+
+```sql
+### Step 1 sesshion1
+SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+SELECT @@global.transaction_isolation, @@session.transaction_isolation;
+START TRANSACTION  WITH CONSISTENT SNAPSHOT;
+SELECT balance FROM accounts WHERE id = 1;
+# balance
+# '1000'
+
+### Step 2 sesshion2
+
+UPDATE accounts SET balance = balance + 500 WHERE id = 1;
+-- 15:29:19	UPDATE accounts SET balance = balance + 500 WHERE id = 1	1 row(s) affected Rows matched: 1  Changed: 1  Warnings: 0	0.000 sec
+COMMIT;
+
+
+### Step 3 sesshion1
+SELECT balance FROM accounts WHERE id = 1;
+-- Output: 1000 (неповторюване читання)
+
+COMMIT;
+```
 
